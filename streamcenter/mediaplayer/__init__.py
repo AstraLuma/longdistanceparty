@@ -4,8 +4,6 @@ API around VLC
 # See https://github.com/videolan/vlc/blob/master/share/lua/http/requests/README.txt
 import asyncio
 import contextlib
-import random
-import secrets
 import subprocess
 import traceback
 import xml.etree.ElementTree as ET
