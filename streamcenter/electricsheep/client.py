@@ -21,6 +21,8 @@ class Sheep:
     last: int  # Node ID
     url: str
 
+    flock: int
+
 
 class Client:
     _server = None
@@ -47,6 +49,7 @@ class Client:
                     xml = ET.fromstring(gz.read())
 
         self._next_retry = time.time() + int(xml.get('retry'))
+        flock = int(xml.get('gen'))
 
         for elem in xml.findall('sheep'):
             yield Sheep(
@@ -59,6 +62,7 @@ class Client:
                 first=int(elem.get('first')),
                 last=int(elem.get('last')),
                 url=elem.get('url'),
+                flock=flock
             )
 
     def time_until_next_try(self):

@@ -31,12 +31,12 @@ class Shepherd:
         while True:
             t = self.client.time_until_next_try()
             if t > 0:
-                print(f"Sleeping {t} seconds...")
+                print(f"Sleeping {round(t)} seconds...")
                 await asyncio.sleep(t)
             async for sheep in self.client.itersheep():
                 await self.store.add(sheep)
 
-    async def run_sequence(self, loop_chance=0.5):
+    async def run_sequence(self, loop_chance=0.82):
         """
         An algorithm for producing sheep for playback.
 
@@ -47,12 +47,15 @@ class Shepherd:
         while True:
             yield current
 
-            loops = [s async for s in self.store if s.first == s.last == current.last]
-            branches = [s async for s in self.store if s.first == current.last != s.last]
-            if not loops and not branches:
+            nexts = [s async for s in self.store if s.flock == current.flock and s.first == current.last]
+            loops = [s for s in nexts if s.first == s.last]
+            branches = [s for s in nexts if s.first != s.last]
+
+            if loops and random.random() < loop_chance:
+                current = random.choice(loops)
+            elif branches:
+                assert branches
+                current = random.choice(branches)
+            else:
                 # Stuck! Pick one at random
                 current = random.choice([s async for s in self.store])
-            elif loops and random.random() < loop_chance:
-                current = random.choice(loops)
-            else:
-                current = random.choice(branches)

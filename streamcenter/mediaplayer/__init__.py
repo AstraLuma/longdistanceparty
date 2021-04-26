@@ -38,7 +38,7 @@ class Vlc:
 
     async def __aenter__(self):
         self.proc = await asyncio.create_subprocess_exec(
-            'vlc', '-I', 'http', '--http-password', self._password, '--http-port', str(self._port),
+            'vlc', '--no-video-title', '-I', 'http', '--http-password', self._password, '--http-port', str(self._port),
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         self._stack.callback(self.proc.terminate)
@@ -129,42 +129,50 @@ class Vlc:
         async with self._http.get(f"{self._url}/requests/playlist.xml") as resp:
             return ET.fromstring(await resp.text())
 
-    async def vlc_queue_item(self, url):
+    async def vlc_queue_item(self, mrl, **options):
         """
         Add a file to the end of the playlist.
         """
         async with self._http.get(
-            f"{self._url}/requests/playlist.json",
-            params={'command': 'in_enqueue', 'input': url},
+            f"{self._url}/requests/status.json",
+            params={'command': 'in_enqueue', 'input': build_mrl(mrl, options)},
         ):
             pass
 
-    async def vlc_play_item(self, url):
+    async def vlc_play_item(self, mrl, **options):
         """
         Play a file immediately
         """
         async with self._http.get(
-            f"{self._url}/requests/playlist.json",
-            params={'command': 'in_play', 'input': url},
+            f"{self._url}/requests/status.json",
+            params={'command': 'in_play', 'input': build_mrl(mrl, options)},
         ):
             pass
 
-    async def vlc_pause(self, url):
+    async def vlc_pause(self):
         """
         Pause playback
         """
         async with self._http.get(
-            f"{self._url}/requests/playlist.json",
-            params={'command': 'pl_forcepause', 'input': url},
+            f"{self._url}/requests/status.json",
+            params={'command': 'pl_forcepause'},
         ):
             pass
 
-    async def vlc_unpause(self, url):
+    async def vlc_unpause(self):
         """
         Resume playback
         """
         async with self._http.get(
-            f"{self._url}/requests/playlist.json",
-            params={'command': 'pl_forceresume', 'input': url},
+            f"{self._url}/requests/status.json",
+            params={'command': 'pl_forceresume'},
         ):
             pass
+
+
+def build_mrl(base, options):
+    rv = base + "#:" + ":".join(
+        f"{k.replace('_', '-')}={v}"
+        for k, v in options.items()
+    )
+    return rv
